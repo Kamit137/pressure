@@ -9,21 +9,18 @@ bot = telebot.TeleBot('6744998769:AAE0_KtJNM9ehs4hu535LyJJa31T0SdyNY8')
 
 
 
-
-
-
-
-
 # действие команд
 # Большие кнопки
 @bot.message_handler(commands=['start'])
 def chat(message):
-    markup1 = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-    b5 = (types.KeyboardButton('ы'))
-    b6 = (types.KeyboardButton('Новый замер'))
+    markup1 = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
+    b2 = (types.InlineKeyboardButton('Новый замер давления'))
+    b5 = (types.KeyboardButton('Напоминание принять лекарства'))
+    b3 = (types.InlineKeyboardButton('Регистрация/обновление данных'))
+    #b6 = (types.KeyboardButton('Удалить'))
     b7 = (types.KeyboardButton('Меню'))
 
-    markup1.row(b5,b6,b7)
+    markup1.add(b7,b2,b5,b3)
     bot.send_message(message.chat.id, 'Добрый день, этот бот поможет вам следить за здоровьем!',reply_markup=markup1)
     menu(message)
 # Если человек прислал фото
@@ -41,7 +38,7 @@ def get_photo(message):
 def callback_message(callback):
     if callback.data == 'delete':
         bot.delete_message(callback.message.chat.id, callback.message.message_id - 1)
-        bot.edit_message_text("Удалено", callback.message.chat.id, callback.message.message_id)
+        #bot.edit_message_text("Удалено", callback.message.chat.id, callback.message.message_id)
     elif callback.data == 'exit':
         bot.delete_message(callback.message.chat.id, callback.message.message_id)
         bot.delete_message(callback.message.chat.id, callback.message.message_id-1)
@@ -49,7 +46,7 @@ def callback_message(callback):
         bot.send_message(callback.message.chat.id, "Введите ваш возраст или обычное давление, отличающееся от средних табличных значений(пример:120/80): ")
         photo = open('/home/kamit/Документы/GitHub/pressure/sublime/7a51f5eb7fe32122f38a0a4c1ad38639.jpeg','rb')
         bot.send_photo(callback.message.chat.id, photo)
-        user_age()
+       
 
 
 
@@ -59,12 +56,26 @@ def callback_message(callback):
 def info(message):
     if message.text.lower() == "привет":
         bot.send_message(message.chat.id, f'Привет, {message.from_user.first_name}')
-    elif message.text.lower() == "id":
-        bot.reply_to(message, f"Ваш ID:{message.from_user.id}")
-    elif message.text == "Удалить":
-        bot.send_message(message.chat.id, 'Удалено')
+    elif message.text.lower() == "/id":
+        bot.send_message(message.chat.id, 'Ваш ID:')
+        bot.reply_to(message, f"{message.from_user.id}")
+    #elif message.text == "Удалить":
+     #   bot.delete_message(message.chat.id, message.message_id-1)
+        
+
+        
     elif message.text == "Меню":
         menu(message)
+    elif message.text == "М":
+        pass
+
+
+
+    elif message.text == "Регистрация/обновление данных":
+        photo = open('/home/kamit/Документы/GitHub/pressure/sublime/7a51f5eb7fe32122f38a0a4c1ad38639.jpeg','rb')
+        bot.send_photo(message.chat.id, photo)
+        bot.send_message(message.chat.id, 'Введите ваше нормальное давление, основываясь на таблице или личном опыте: ')
+        bot.register_next_step_handler(message, user_pr_norm)
     
 
     else:
@@ -76,18 +87,10 @@ def info(message):
 
 #Вызов меню
 def menu(message):
-
-
     markup2 = types.InlineKeyboardMarkup(row_width=1)
-
     b1 = (types.InlineKeyboardButton('Закрыть меню',callback_data='exit'))
-    b2 = (types.InlineKeyboardButton('Новый замер давления',callback_data='new_pressure'))
-    b3 = (types.InlineKeyboardButton('Внести/редактировать данные о теле',callback_data='body'))
-
     b4 = (types.InlineKeyboardButton('Статистика',callback_data='full_data'))
-
-    markup2.add(b3,b2,b4,b1)
-    
+    markup2.add(b4,b1)
     bot.send_message(message.chat.id, '\nВыберите функцию:', reply_markup=markup2)
 
 
@@ -98,26 +101,21 @@ def menu(message):
 
 
 #
-def user_age():
-    
-    age = 10
-    db = sqlite3.connect('power.db')
-
-
-    c = db.cursor()
-
-    c.execute("""CREATE TABLE IF NOT EXISTS pressure(age text)""")
-
-
-
-    c.execute("INSERT INTO pressure(age)VALUES('%s')"%(age))
-
-    db.commit()
-    db.close()
-
-
-
-
+def user_pr_norm(message):
+    n_p = message.text 
+    if "\\"in n_p or "/" in n_p:
+        db = sqlite3.connect('power.db')
+        c = db.cursor()
+        c.execute("""CREATE TABLE IF NOT EXISTS pressure(id text primary key,normal_pressure text )""")
+        c.execute("INSERT INTO pressure(id,normal_pressure)VALUES('%s','%s')"%(message.from_user.id,n_p))
+        db.commit()
+        db.close()
+        bot.send_message(message.chat.id, 'Данные записаны')
+        #bot.send_message(message.chat.id, 'Введите ваш возраст: ')
+        #bot.register_next_step_handler(message, user_)
+    else:
+        bot.send_message(message.chat.id, 'Запись некорректна, попробуйте ещё раз')
+        bot.register_next_step_handler(message, user_pr_norm)
 
 
 # Команда id
