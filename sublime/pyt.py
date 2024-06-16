@@ -106,7 +106,7 @@ def user_pr_norm(message):
     if "\\"in n_p or "/" in n_p:
         db = sqlite3.connect('power.db')
         c = db.cursor()
-        c.execute("""CREATE TABLE IF NOT EXISTS pressure(id text primary key,normal_pressure text )""")
+        c.execute("""CREATE TABLE IF NOT EXISTS pressure(id text,normal_pressure text )""")
         c.execute("INSERT INTO pressure(id,normal_pressure)VALUES('%s','%s')"%(message.from_user.id,n_p))
         db.commit()
         db.close()
